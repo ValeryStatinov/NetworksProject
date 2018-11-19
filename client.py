@@ -5,7 +5,7 @@ from contextlib import suppress
 async def get_spam(reader, writer):
     while True:
         data = await reader.read(100)
-        print(data)
+        print(data.decode())
 
 
 async def tcp_echo_client(loop):
