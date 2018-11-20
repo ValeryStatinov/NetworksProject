@@ -1,1 +1,1 @@
-# Development branch for python server
+# Development branch testing Client-Server communication
