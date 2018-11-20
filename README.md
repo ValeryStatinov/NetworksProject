@@ -1,1 +1,1 @@
-# NetworksProject1
+# Development branch for java client
