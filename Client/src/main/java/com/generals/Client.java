@@ -9,6 +9,7 @@ public class Client {
         String address = "127.0.0.1";
 
         try {
+            System.out.println("Connecting to server...");
             InetAddress ipAddress = InetAddress.getByName(address);
             Socket socket = new Socket(ipAddress, serverPort);
             System.out.println("Connected to server");
