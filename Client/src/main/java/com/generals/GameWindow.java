@@ -109,6 +109,7 @@ public class GameWindow {
     }
 
     private void setAvailableGamesListFromSocket() throws IOException {
+        System.out.println("Getting list of available games from Server");
         BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String content = br.readLine();
         System.out.println("Get content from server: " + content);
