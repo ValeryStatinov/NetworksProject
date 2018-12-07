@@ -1,9 +1,14 @@
 import asyncio
 import json
+from contextlib import suppress
+
+
+DEFAULT_GAME_SPEED = 2
+MAX_SLOTS = 8
 
 
 class GameSession:
-    def __init__(self, loop, game_id, name, game_speed):
+    def __init__(self, loop, game_id, name, event, game_speed=DEFAULT_GAME_SPEED):
         self.clients = []
         self.loop = loop
         self.game_id = game_id
@@ -13,6 +18,7 @@ class GameSession:
         self.is_game_running = False
         self.is_waiting = False
         self.ready_count = 0
+        self.event = event
 
     async def gameLoop(self):
         while self.is_game_running and len(self.clients):
@@ -24,12 +30,15 @@ class GameSession:
         self.is_game_running = False
         self.is_waiting = False
         self.ready_count = 0
+        self.spam_task.cancel()
+        self.tick_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await self.spam_task
+            await self.tick_task
+        self.event.set()
 
-    async def addClient(self, client):
+    def addClient(self, client):
         self.clients.append(client)
-        if not self.is_waiting:
-            self.is_waiting = True
-            await self.waitForReadyFromEveryone()
 
     async def sapmClient(self, client):
         addr = client.writer.get_extra_info('peername')
@@ -44,15 +53,15 @@ class GameSession:
     async def spamEveryone(self):
         while self.is_game_running:
             await self.tick.acquire()
-            tick_task = self.loop.create_task(self.tick.wait())
+            self.tick_task = self.loop.create_task(self.tick.wait())
 
-            done, pending = await asyncio.wait([tick_task], return_when=asyncio.FIRST_COMPLETED)
+            done, pending = await asyncio.wait([self.tick_task], return_when=asyncio.FIRST_COMPLETED)
 
-            if tick_task in done:
+            if self.tick_task in done:
                 for client in self.clients:
                     await self.sapmClient(client)
                 self.tick.release()
-                tick_task = None
+                self.tick_task = None
 
     async def waitForReadyFromClient(self, client):
         is_ready = await client.reader.read(100)
@@ -70,8 +79,14 @@ class GameSession:
     def isGameRunning(self):
         return self.is_game_running
 
+    def getMaxSlots(self):
+        return MAX_SLOTS
+
+    def getEmptySlots(self):
+        return MAX_SLOTS - len(self.clients)
+
     def startGame(self):
         if not self.is_game_running:
             self.is_game_running = True
             self.loop.create_task(self.gameLoop())
-            self.loop.create_task(self.spamEveryone())
+            self.spam_task = self.loop.create_task(self.spamEveryone())
