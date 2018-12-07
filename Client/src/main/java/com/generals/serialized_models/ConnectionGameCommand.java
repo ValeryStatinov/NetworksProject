@@ -1,15 +1,20 @@
-package com.generals.models;
+package com.generals.serialized_models;
 
 public class ConnectionGameCommand {
     String command;
     String name = null;
+    int game_id;
 
-    public ConnectionGameCommand(String command, String name) {
+    public ConnectionGameCommand(String command, int id) {
 //        if (command != "create_game" || command != "ready_to_start") {
 //            throw new Exception("Unknown ConnectionGameCommand");
 //        }
         this.command = command;
-        this.name = name;
+        this.game_id = id;
+    }
+
+    public ConnectionGameCommand(String command) {
+        this.command = command;
     }
 
     @Override

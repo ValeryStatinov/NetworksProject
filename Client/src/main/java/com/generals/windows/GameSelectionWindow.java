@@ -1,15 +1,19 @@
-package com.generals;
+package com.generals.windows;
 
-import com.generals.models.AvailableGameInfo;
-import com.generals.models.ConnectionGameCommand;
+import com.generals.MainApplication;
+import com.generals.serialized_models.AvailableGameInfo;
+import com.generals.serialized_models.ConnectionGameCommand;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import javafx.event.*;
+import javafx.geometry.*;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.*;
+
+import java.io.*;
+
+import com.google.gson.Gson;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.BorderPane;
@@ -21,46 +25,22 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-import java.io.*;
-import java.net.*;
 
-import com.google.gson.Gson;
-
-
-public class GameWindow {
+public class GameSelectionWindow implements Window {
     private static int WINDOW_WIDTH = 600;
     private static int WINDOW_HEIGHT = 600;
-    private static final String SERVER_ADDRESS = "127.0.0.1";
-    private static final int SERVER_PORT = 8888;
     private Stage stage;
-    private Socket socket;
     private AvailableGameInfo availableGamesList[];
     private Integer selectedGameId = null;
 
-    public GameWindow(Stage stage) {
+    public GameSelectionWindow(Stage stage) {
         this.stage = stage;
-        try {
-            connectToServer();
-            if (socket != null) {
-                setAvailableGamesListFromSocket();
-            } else {
-                setAvailableGamesListSomehow();
-            }
-            setScene();
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-
+        setAvailableGamesListFromServer();
+        stage.setScene(getScene());
+        System.out.println("Showing " + this.getClass().getSimpleName());
     }
 
-    private void connectToServer() throws IOException {
-        System.out.println("Connecting to server...");
-        InetAddress ipAddress = InetAddress.getByName(SERVER_ADDRESS);
-        socket = new Socket(ipAddress, SERVER_PORT);
-        System.out.println("Connected to server!");
-    }
-
-    public void setScene() {
+    public Scene getScene() {
         BorderPane pane = new BorderPane();
         String style = "-fx-background-color: rgba(13,9,6,0.76)";
         pane.setStyle(style);
@@ -77,7 +57,6 @@ public class GameWindow {
         Button createNewGameButton = getCreateNewGameButton();
         buttonsBox.getChildren().add(createNewGameButton);
         pane.setRight(buttonsBox);
-
         ListView<String> list = new ListView<String>();
         ObservableList<String> items = FXCollections.observableArrayList();
         for (AvailableGameInfo info : availableGamesList) {
@@ -98,7 +77,7 @@ public class GameWindow {
         pane.setLeft(list);
 
         Scene scene = new Scene(pane, WINDOW_WIDTH, WINDOW_HEIGHT);
-        stage.setScene(scene);
+        return scene;
     }
 
     private Text getText() {
@@ -108,12 +87,13 @@ public class GameWindow {
         return text;
     }
 
-    private void setAvailableGamesListFromSocket() throws IOException {
+    private void setAvailableGamesListFromServer() {
         System.out.println("Getting list of available games from Server");
-        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        String content = br.readLine();
-        System.out.println("Get content from server: " + content);
-        availableGamesList = new Gson().fromJson(content, AvailableGameInfo[].class);
+        String content = MainApplication.readContent();
+        AvailableGameInfo info = new Gson().fromJson(content, AvailableGameInfo.class);
+        availableGamesList = new AvailableGameInfo[1];
+        availableGamesList[0] = info;
+//        availableGamesList = new Gson().fromJson(content, AvailableGameInfo[].class);
     }
 
     private void setAvailableGamesListSomehow() {
@@ -135,6 +115,10 @@ public class GameWindow {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Connect to game!'");
                 System.out.println("Connecting to game #" + selectedGameId);
+                ConnectionGameCommand command = new ConnectionGameCommand("join", 0);
+                sendCommandToServer(command);
+                ConnectionGameCommand command1 = new ConnectionGameCommand("ready_to_start");
+                sendCommandToServer(command1);
             }
         });
         return button;
@@ -145,8 +129,8 @@ public class GameWindow {
         button.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Create new game'");
-                ConnectionGameCommand command = new ConnectionGameCommand("create_game", "Game#5");
-                sendCommandToServer(command);
+
+
             }
         });
         return button;
@@ -157,10 +141,9 @@ public class GameWindow {
         Gson gson = new Gson();
         String stringToSend = gson.toJson(command);
         try {
-            OutputStream outputStream = socket.getOutputStream();
+            OutputStream outputStream = MainApplication.getOutputStream();
             PrintStream printStream = new PrintStream(outputStream);
             printStream.print(stringToSend);
-
         } catch (Exception exception) {
             exception.printStackTrace();
         }

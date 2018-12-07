@@ -1,4 +1,4 @@
-package com.generals;
+package com.generals.windows;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -13,15 +13,19 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-public class MainMenu {
+public class MainMenuWindow implements Window {
     private static int WINDOW_WIDTH = 500;
     private static int WINDOW_HEIGHT = 300;
     private Stage stage;
 
-    public MainMenu(Stage primaryStage) {
-        stage = primaryStage;
-        Scene scene = getMenuScene();
-        stage.setScene(scene);
+    public MainMenuWindow(Stage stage) {
+        this.stage = stage;
+        stage.setScene(getScene());
+        System.out.println("Showing " + this.getClass().getSimpleName());
+    }
+
+    public Scene getScene() {
+        return getMenuScene();
     }
 
     private Scene getMenuScene() {
@@ -51,14 +55,10 @@ public class MainMenu {
         button.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'connect to server'");
-                GameWindow gamesListWindow = new GameWindow(stage);
-//                stage.setScene(gamesListWindow.getScene());
+                GameSelectionWindow gameSelectionWindow = new GameSelectionWindow(stage);
+//                stage.setScene(gameSelectionWindow.getScene());
             }
         });
         return button;
-    }
-
-    public Stage getStage() {
-        return stage;
     }
 }

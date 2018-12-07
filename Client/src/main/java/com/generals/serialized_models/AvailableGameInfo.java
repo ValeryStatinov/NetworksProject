@@ -1,4 +1,4 @@
-package com.generals.models;
+package com.generals.serialized_models;
 
 public class AvailableGameInfo {
     public int id;
