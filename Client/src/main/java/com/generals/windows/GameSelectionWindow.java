@@ -91,10 +91,7 @@ public class GameSelectionWindow implements Window {
     private void setAvailableGamesListFromServer() {
         System.out.println("Getting list of available games from Server");
         String content = MainApplication.readContentFromServer();
-        AvailableGameInfo info = new Gson().fromJson(content, AvailableGameInfo.class);
-        availableGamesList = new AvailableGameInfo[1];
-        availableGamesList[0] = info;
-//        availableGamesList = new Gson().fromJson(content, AvailableGameInfo[].class);
+        availableGamesList = new Gson().fromJson(content, AvailableGameInfo[].class);
     }
 
 //    private void setAvailableGamesListSomehow() {

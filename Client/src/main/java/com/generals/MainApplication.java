@@ -88,8 +88,9 @@ public class MainApplication extends Application {
         System.out.println("Sending command to server: " + content);
         try {
             OutputStream outputStream = MainApplication.getOutputStream();
-            PrintStream printStream = new PrintStream(outputStream);
-            printStream.print(content);
+            outputStream.write(content.getBytes());
+//            PrintStream printStream = new PrintStream(outputStream);
+//            printStream.print(content);
         } catch (Exception exception) {
             exception.printStackTrace();
         }
