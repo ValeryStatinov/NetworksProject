@@ -3,18 +3,18 @@ package com.generals.serialized_models;
 public class ConnectionGameCommand {
     String command;
     String name = null;
-    int game_id;
-
-    public ConnectionGameCommand(String command, int id) {
-//        if (command != "create_game" || command != "ready_to_start") {
-//            throw new Exception("Unknown ConnectionGameCommand");
-//        }
-        this.command = command;
-        this.game_id = id;
-    }
+    Integer game_id = null;
 
     public ConnectionGameCommand(String command) {
         this.command = command;
+    }
+
+    public void setGameId(int game_id) {
+        this.game_id = game_id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override
@@ -25,6 +25,9 @@ public class ConnectionGameCommand {
         }
         if (name != null) {
             result.append(" " + name.toString());
+        }
+        if (game_id != null) {
+            result.append(" #" + game_id.toString());
         }
         return result.toString();
     }

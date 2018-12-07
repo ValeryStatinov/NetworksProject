@@ -8,6 +8,7 @@ import com.generals.windows.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -69,7 +70,7 @@ public class MainApplication extends Application {
         return outputStream;
     }
 
-    public static String readContent() {
+    public static String readContentFromServer() {
         String content = null;
         byte buf[] = new byte[64 * 1024];
         try {
@@ -81,6 +82,17 @@ public class MainApplication extends Application {
             exception.printStackTrace();
         }
         return content;
+    }
+
+    public static void writeContentToServer(String content) {
+        System.out.println("Sending command to server: " + content);
+        try {
+            OutputStream outputStream = MainApplication.getOutputStream();
+            PrintStream printStream = new PrintStream(outputStream);
+            printStream.print(content);
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
     }
 
 }
