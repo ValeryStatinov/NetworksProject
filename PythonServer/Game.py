@@ -1,92 +1,120 @@
 import asyncio
 import json
+from enum import Enum, auto
 from contextlib import suppress
+from Client import Client, ClientStatus
 
-
-DEFAULT_GAME_SPEED = 2
+DEFAULT_GAME_SPEED = 1
 MAX_SLOTS = 8
 
 
+class GameSessionStatus(Enum):
+    WAITING_READY = auto()
+    GAME_STARTED = auto()
+    NOT_STARTED = auto()
+    FINISHED = auto()
+
+
 class GameSession:
-    def __init__(self, loop, game_id, name, event, game_speed=DEFAULT_GAME_SPEED):
+    def __init__(self, loop, name, end_game_session_event, game_speed=DEFAULT_GAME_SPEED):
         self.clients = []
+        self.clients_mutex = asyncio.Lock()
         self.loop = loop
-        self.game_id = game_id
         self.name = name
         self.game_speed = game_speed
+        self.status = GameSessionStatus.NOT_STARTED
         self.tick = asyncio.Condition()
-        self.is_game_running = False
-        self.is_waiting = False
         self.ready_count = 0
-        self.event = event
+        self.end_game_session_event = end_game_session_event
+        self.everyone_ready_event = asyncio.Event()
+        self.tasks = []
 
     async def gameLoop(self):
-        while self.is_game_running and len(self.clients):
-            print('tick')
+        print('Game session loop started in {} game'.format(self.name))
+        while not self.status == GameSessionStatus.FINISHED and len(self.clients):
             await self.tick.acquire()
             self.tick.notify_all()
             self.tick.release()
             await asyncio.sleep(self.game_speed)
-        self.is_game_running = False
-        self.is_waiting = False
+
+        print('Destroying coroutines in {} game'.format(self.name))
+        self.status = GameSessionStatus.FINISHED
         self.ready_count = 0
-        self.spam_task.cancel()
-        self.tick_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await self.spam_task
-            await self.tick_task
-        self.event.set()
+        for task in self.tasks:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+        self.end_game_session_event.set()
 
-    def addClient(self, client):
-        self.clients.append(client)
+    async def addClient(self, client):
+        async with self.clients_mutex:
+            self.clients.append(client)
+            await client.write(self.getJSONMetaInfo())
 
-    async def sapmClient(self, client):
-        addr = client.writer.get_extra_info('peername')
-        print('spam to', addr)
-        client.writer.write('spam'.encode())
-        try:
-            await client.writer.drain()
-        except ConnectionResetError:
-            print('lost connection from', addr)
-            self.clients.remove(client)
+    def getJSONMetaInfo(self):
+        meta_info = {'empty_slots': self.getEmptySlots(), 'max_slots': self.getMaxSlots(), 'ready': self.ready_count}
+        return (json.dumps(meta_info)).encode()
 
-    async def spamEveryone(self):
-        while self.is_game_running:
+    async def sendMetaInfo(self):
+        print('Started sending meta info in {} game'.format(self.name))
+        while self.status == GameSessionStatus.WAITING_READY:
             await self.tick.acquire()
-            self.tick_task = self.loop.create_task(self.tick.wait())
+            task = self.loop.create_task(self.tick.wait())
+            self.tasks.append(task)
+            await task
 
-            done, pending = await asyncio.wait([self.tick_task], return_when=asyncio.FIRST_COMPLETED)
-
-            if self.tick_task in done:
-                for client in self.clients:
-                    await self.sapmClient(client)
-                self.tick.release()
-                self.tick_task = None
-
-    async def waitForReadyFromClient(self, client):
-        is_ready = await client.reader.read(100)
-        is_ready = json.loads(is_ready.decode())
-        if is_ready['command'] == 'ready_to_start':
-            self.ready_count += 1
-            if self.ready_count == len(self.clients):
-                self.startGame()
-
-    async def waitForReadyFromEveryone(self):
-        while not self.is_game_running:
+            meta_info = self.getJSONMetaInfo()
             for client in self.clients:
-                await self.waitForReadyFromClient(client)
+                if not await client.write(meta_info):
+                    await self.removeClient(client)
 
-    def isGameRunning(self):
-        return self.is_game_running
+            self.tick.release()
+            self.tasks.remove(task)
 
-    def getMaxSlots(self):
+    async def removeClient(self, client):
+        async with self.clients_mutex:
+            self.clients.remove(client)
+            if client.status == ClientStatus.WAITING_READY:
+                self.ready_count -= 1
+            client.setStatus(ClientStatus.CHOOSING_GAME)
+
+    @staticmethod
+    def getMaxSlots():
         return MAX_SLOTS
 
     def getEmptySlots(self):
         return MAX_SLOTS - len(self.clients)
 
-    def startGame(self):
-        if not self.is_game_running:
-            self.is_game_running = True
-            self.loop.create_task(self.gameLoop())
-            self.spam_task = self.loop.create_task(self.spamEveryone())
+    def startGameSession(self):
+        if self.status == GameSessionStatus.NOT_STARTED:
+            self.status = GameSessionStatus.WAITING_READY
+            self.tasks.append(self.loop.create_task(self.gameLoop()))
+            self.tasks.append(self.loop.create_task(self.sendMetaInfo()))
+            self.tasks.append(self.loop.create_task(self.sendGameData()))
+
+    async def increaseReadiness(self):
+        self.ready_count += 1
+        async with self.clients_mutex:
+            if self.ready_count == len(self.clients):
+                print('Start playing {} game in 5 seconds'.format(self.name))
+                await asyncio.sleep(5)
+                self.status = GameSessionStatus.GAME_STARTED
+                self.everyone_ready_event.set()
+
+    async def sendGameData(self):
+        await self.everyone_ready_event.wait()
+        print('Start playing')
+
+        while self.status == GameSessionStatus.GAME_STARTED:
+            await self.tick.acquire()
+            task = self.loop.create_task(self.tick.wait())
+            self.tasks.append(task)
+            await task
+
+            spam = (json.dumps({'hello': 'world'})).encode()
+            for client in self.clients:
+                if not await client.write(spam):
+                    await self.removeClient(client)
+
+            self.tick.release()
+            self.tasks.remove(task)
