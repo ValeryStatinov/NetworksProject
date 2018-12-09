@@ -1,14 +1,12 @@
 package com.generals;
 
 import javafx.application.Application;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 import com.generals.windows.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -17,8 +15,8 @@ public class MainApplication extends Application {
     public void start(Stage primaryStage) {
         try {
             Stage stage = primaryStage;
-            MainMenuWindow menu = new MainMenuWindow(stage);
-            System.out.println("Showing menu");
+            stage.setTitle("Generals");
+            WelcomeWindow window = new WelcomeWindow(stage);
             stage.show();
         } catch (Exception e) {
             e.printStackTrace();
@@ -39,7 +37,7 @@ public class MainApplication extends Application {
                 System.out.println("Connecting to server...");
                 InetAddress ipAddress = InetAddress.getByName(SERVER_ADDRESS);
                 socket = new Socket(ipAddress, SERVER_PORT);
-                System.out.println("Connected to server!");
+                System.out.println("Connection established");
             } catch (IOException exception) {
                 System.out.println("Failed to connect to server");
                 exception.printStackTrace();
@@ -85,12 +83,10 @@ public class MainApplication extends Application {
     }
 
     public static void writeContentToServer(String content) {
-        System.out.println("Sending command to server: " + content);
+        System.out.println("Sending content to server: " + content);
         try {
             OutputStream outputStream = MainApplication.getOutputStream();
             outputStream.write(content.getBytes());
-//            PrintStream printStream = new PrintStream(outputStream);
-//            printStream.print(content);
         } catch (Exception exception) {
             exception.printStackTrace();
         }
