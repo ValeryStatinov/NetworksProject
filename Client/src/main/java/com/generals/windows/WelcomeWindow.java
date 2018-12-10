@@ -16,7 +16,12 @@ import javafx.stage.Stage;
 public class WelcomeWindow implements Window {
     private static int WINDOW_WIDTH = 600;
     private static int WINDOW_HEIGHT = 400;
+
     private Stage stage;
+
+    private Text welcomeText;
+    private Button serverConnectionButton;
+
 
     public WelcomeWindow(Stage stage) {
         this.stage = stage;
@@ -24,36 +29,36 @@ public class WelcomeWindow implements Window {
         System.out.println("Showing " + this.getClass().getSimpleName());
     }
 
-    private Text getWelcomeText() {
-        Text text = new Text("Welcome to generals game!");
-        text.setFont(Font.font("Verdana", FontWeight.BOLD, 26));
-        text.setFill(Color.LIGHTYELLOW);
-        return text;
+    private void initWelcomeText() {
+        welcomeText = new Text("Welcome to generals game!");
+        welcomeText.setFont(Font.font("Verdana", FontWeight.BOLD, 26));
+        welcomeText.setFill(Color.LIGHTYELLOW);
     }
 
-    private Button getServerConnectionButton() {
-        Button button = new Button("Connect to server");
-        button.setOnAction(new EventHandler<ActionEvent>() {
+    private void initServerConnectionButton() {
+        serverConnectionButton = new Button("Connect to server");
+        serverConnectionButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Connect to server'");
                 GameSelectionWindow gameSelectionWindow = new GameSelectionWindow(stage);
             }
         });
-        return button;
     }
 
     public Scene getScene() {
         BorderPane pane = new BorderPane();
         VBox vbox = new VBox();
-        pane.setCenter(vbox);
         vbox.setStyle("-fx-background-color: rgba(28,14,80,0.76)");
         vbox.setAlignment(Pos.CENTER);
         vbox.setSpacing(100);
-        Text welcomeText = getWelcomeText();
-        Button serverConnectionButton = getServerConnectionButton();
+        pane.setCenter(vbox);
+
+        initWelcomeText();
+        initServerConnectionButton();
         vbox.getChildren().add(welcomeText);
         vbox.getChildren().add(serverConnectionButton);
-        Scene menuScene = new Scene(pane, WINDOW_WIDTH, WINDOW_HEIGHT);
-        return menuScene;
+
+        Scene scene = new Scene(pane, WINDOW_WIDTH, WINDOW_HEIGHT);
+        return scene;
     }
 }
