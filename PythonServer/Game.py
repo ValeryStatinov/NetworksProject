@@ -77,6 +77,7 @@ class GameSession:
             if client.status == ClientStatus.WAITING_READY:
                 self.ready_count -= 1
             client.setStatus(ClientStatus.CHOOSING_GAME)
+            client.game_id = None
 
     @staticmethod
     def getMaxSlots():
