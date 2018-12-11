@@ -1,6 +1,7 @@
 package com.generals.subwindows;
 
 import com.generals.MainApplication;
+import com.generals.ServerConnection;
 import com.generals.serialized_models.SelectionGameCommand;
 import com.google.gson.Gson;
 import javafx.beans.value.ChangeListener;
@@ -74,11 +75,11 @@ public class EntryNewGameNameSubwindow {
             public void handle(ActionEvent event) {
                 SelectionGameCommand command = new SelectionGameCommand("create_game");
                 command.setName(textField.getText());
-                sendCommandToServer(command);
+                MainApplication.getServerConnection().sendCommandToServer(command);
                 SelectionGameCommand command1 = new SelectionGameCommand("ready_to_start");
-                sendCommandToServer(command1);
+                MainApplication.getServerConnection().sendCommandToServer(command1);
                 while (true) {
-                    MainApplication.readContentFromServer();
+                    MainApplication.getServerConnection().readContentFromServer();
                 }
                 // TODO: go to the next window
             }
@@ -90,12 +91,5 @@ public class EntryNewGameNameSubwindow {
             return false;
         }
         return true;
-    }
-
-    private void sendCommandToServer(SelectionGameCommand command) {
-        System.out.println("Sending command to server: " + command);
-        Gson gson = new Gson();
-        String stringToSend = gson.toJson(command);
-        MainApplication.writeContentToServer(stringToSend);
     }
 }

@@ -11,6 +11,8 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class MainApplication extends Application {
+    private static ServerConnection serverConnection = null;
+
     @Override
     public void start(Stage primaryStage) {
         try {
@@ -27,69 +29,13 @@ public class MainApplication extends Application {
         launch(args);
     }
 
-    private static final String SERVER_ADDRESS = "127.0.0.1";
-    private static final int SERVER_PORT = 8888;
-    private static Socket socket = null;
-
-    private static Socket getSocket() {
-        if (socket == null) {
-            try {
-                System.out.println("Connecting to server...");
-                InetAddress ipAddress = InetAddress.getByName(SERVER_ADDRESS);
-                socket = new Socket(ipAddress, SERVER_PORT);
-                System.out.println("Connection established");
-            } catch (IOException exception) {
-                System.out.println("Failed to connect to server");
-                exception.printStackTrace();
-            }
-        }
-        return socket;
-    }
-
-    public static InputStream getInputStream() {
-        InputStream inputStream = null;
-        try {
-            inputStream = getSocket().getInputStream();
-        } catch (IOException exception) {
-            System.out.println("Failed to get input stream");
-            exception.printStackTrace();
-        }
-        return inputStream;
-    }
-
-    public static OutputStream getOutputStream() {
-        OutputStream outputStream = null;
-        try {
-            outputStream = getSocket().getOutputStream();
-        } catch (IOException exception) {
-            System.out.println("Failed to get output stream");
-            exception.printStackTrace();
-        }
-        return outputStream;
-    }
-
-    public static String readContentFromServer() {
-        String content = null;
-        byte buf[] = new byte[64 * 1024];
-        try {
-            InputStream in = getInputStream();
-            int r = in.read(buf);
-            content = new String(buf, 0, r);
-            System.out.println("Get content from server: " + content);
-        } catch (IOException exception) {
-            exception.printStackTrace();
-        }
-        return content;
-    }
-
-    public static void writeContentToServer(String content) {
-        System.out.println("Sending content to server: " + content);
-        try {
-            OutputStream outputStream = MainApplication.getOutputStream();
-            outputStream.write(content.getBytes());
-        } catch (Exception exception) {
-            exception.printStackTrace();
+    public static void initServerConnection(String serverAddress, int serverPort) {
+        if (serverConnection == null) {
+            serverConnection = new ServerConnection(serverAddress, serverPort);
         }
     }
 
+    public static ServerConnection getServerConnection() {
+        return serverConnection;
+    }
 }

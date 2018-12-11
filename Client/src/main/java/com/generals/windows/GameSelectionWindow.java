@@ -1,6 +1,7 @@
 package com.generals.windows;
 
 import com.generals.MainApplication;
+import com.generals.ServerConnection;
 import com.generals.serialized_models.AvailableGameInfo;
 import com.generals.serialized_models.SelectionGameCommand;
 import com.generals.subwindows.EntryNewGameNameSubwindow;
@@ -18,6 +19,13 @@ import javafx.scene.text.*;
 import javafx.stage.*;
 
 import com.google.gson.Gson;
+import sun.applet.Main;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class GameSelectionWindow implements Window {
@@ -31,7 +39,8 @@ public class GameSelectionWindow implements Window {
     private Button connectToChosenGameButton;
     private ListView<String> gamesListView;
 
-    private AvailableGameInfo availableGames[];
+    private List<AvailableGameInfo> availableGames = Collections.synchronizedList(new ArrayList<AvailableGameInfo>());
+    private AtomicBoolean isAvailableGamesChanged = new AtomicBoolean(false);
     private Integer selectedGameId = null;
 
     public GameSelectionWindow(Stage stage) {
@@ -55,11 +64,11 @@ public class GameSelectionWindow implements Window {
                 System.out.println("Connecting to game #" + selectedGameId);
                 SelectionGameCommand command = new SelectionGameCommand("join");
                 command.setGameId(selectedGameId);
-                sendCommandToServer(command);
+                MainApplication.getServerConnection().sendCommandToServer(command);
                 SelectionGameCommand command1 = new SelectionGameCommand("ready_to_start");
-                sendCommandToServer(command1);
+                MainApplication.getServerConnection().sendCommandToServer(command1);
                 while (true) {
-                    MainApplication.readContentFromServer();
+                    MainApplication.getServerConnection().readContentFromServer();
                 }
             }
         });
@@ -90,7 +99,7 @@ public class GameSelectionWindow implements Window {
                 "-fx-font-family: 'DejaVu Sans'");
         gamesListView.getSelectionModel().getSelectedIndices().addListener(new ListChangeListener<Integer>() {
             public void onChanged(Change<? extends Integer> c) {
-                selectedGameId = availableGames[c.getList().get(0)].game_id;
+                selectedGameId = availableGames.get(c.getList().get(0)).game_id;
                 System.out.println("Selected game id = " + selectedGameId);
                 connectToChosenGameButton.setDisable(false);
             }
@@ -119,7 +128,6 @@ public class GameSelectionWindow implements Window {
         buttonsBox.setPadding(new Insets(10, 30, 10, 10));
         pane.setRight(buttonsBox);
 
-
         // Left section (with list)
         initGamesListView();
         pane.setLeft(gamesListView);
@@ -131,15 +139,10 @@ public class GameSelectionWindow implements Window {
 
     private void setAvailableGamesFromServer() {
         System.out.println("Getting list of available games from Server");
-        String content = MainApplication.readContentFromServer();
-        availableGames = new Gson().fromJson(content, AvailableGameInfo[].class);
-    }
-
-    private void sendCommandToServer(SelectionGameCommand command) {
-        System.out.println("Sending command to server: " + command);
-        Gson gson = new Gson();
-        String stringToSend = gson.toJson(command);
-        MainApplication.writeContentToServer(stringToSend);
+        String content = MainApplication.getServerConnection().readContentFromServer();
+        AvailableGameInfo[] availableGamesArray = new Gson().fromJson(content, AvailableGameInfo[].class);
+        availableGames.clear();
+        availableGames.addAll(Arrays.asList(availableGamesArray));
     }
 }
 

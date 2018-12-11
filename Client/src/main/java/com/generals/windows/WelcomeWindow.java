@@ -1,5 +1,6 @@
 package com.generals.windows;
 
+import com.generals.MainApplication;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -40,6 +41,8 @@ public class WelcomeWindow implements Window {
         serverConnectionButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Connect to server'");
+                MainApplication.initServerConnection("127.0.0.1", 8888);
+                // TODO: subwindow with server parameters
                 GameSelectionWindow gameSelectionWindow = new GameSelectionWindow(stage);
             }
         });
