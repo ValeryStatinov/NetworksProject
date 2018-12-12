@@ -102,12 +102,13 @@ public class WaitingRoomWindow implements Window {
         readyToPlayButton = new Button("Ready to play");
         readyToPlayButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
+                readyToPlayButton.setDisable(true);
                 System.out.println("Pressed button 'Ready to play'");
                 SelectionGameCommand command = new SelectionGameCommand("ready_to_start");
                 MainApplication.getServerConnection().sendCommandToServer(command);
-                while (true) {
-                    MainApplication.getServerConnection().readContentFromServer();
-                }
+//                while (true) {
+//                    MainApplication.getServerConnection().readContentFromServer();
+//                }
             }
         });
     }

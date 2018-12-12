@@ -89,14 +89,18 @@ public class GameSelectionWindow implements Window {
                 "-fx-font-family: 'DejaVu Sans'");
         gamesListView.getSelectionModel().getSelectedIndices().addListener(new ListChangeListener<Integer>() {
             public void onChanged(Change<? extends Integer> c) {
-                System.out.println("onChanged ListView");
-                // TODO:
-//                synchronized (auditor.getMutex()) {
-//                    System.out.println("Super values: " + c.getList().get(0) + " " + c.getList().size());
-//                    selectedGameId = availableGames.get(c.getList().get(0)).game_id;
-//                }
-//                System.out.println("Selected game id = " + selectedGameId);
-//                connectToChosenGameButton.setDisable(false);
+                synchronized (auditor.getMutex()) {
+                    int emphasizedIndex = c.getList().get(0);
+                    System.out.println(Thread.currentThread().getName() + " ListView: on change: " + emphasizedIndex);
+                    if (emphasizedIndex == -1) {
+                        // The list is empty, do nothing
+                        return;
+                    } else {
+                        selectedGameId = availableGames.get(emphasizedIndex).game_id;
+                        System.out.println("Selected game id = " + selectedGameId);
+                        connectToChosenGameButton.setDisable(false);
+                    }
+                }
             }
         });
         auditor.getVersion().addListener(new ChangeListener<Number>() {
@@ -110,12 +114,22 @@ public class GameSelectionWindow implements Window {
         Platform.runLater(new Runnable() {
             public void run() {
                 ObservableList<String> items = FXCollections.observableArrayList();
+                Integer newEmphasizedIndex = null;
                 synchronized (auditor.getMutex()) {
-                    for (AvailableGameInfo info : availableGames) {
-                        items.add(info.toString());
+                    for (int i = 0; i < availableGames.size(); ++i) {
+                        items.add(availableGames.get(i).toString());
+                        if (selectedGameId != null && availableGames.get(i).game_id == selectedGameId) {
+                            newEmphasizedIndex = i;
+                        }
                     }
                 }
                 gamesListView.setItems(items);
+                if (newEmphasizedIndex == null) {
+                    selectedGameId = null;
+                    connectToChosenGameButton.setDisable(true);
+                } else {
+                    gamesListView.getSelectionModel().select(newEmphasizedIndex);
+                }
                 System.out.println("GamesListView was updated");
             }
         });
