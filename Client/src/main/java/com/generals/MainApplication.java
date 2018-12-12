@@ -4,12 +4,6 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import com.generals.windows.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-
 public class MainApplication extends Application {
     private static ServerConnection serverConnection = null;
 

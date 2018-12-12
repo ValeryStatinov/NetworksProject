@@ -1,7 +1,7 @@
 package com.generals.windows;
 
 import com.generals.MainApplication;
-import com.generals.ServerConnection;
+import com.generals.audirors.AvailableGamesAuditor;
 import com.generals.serialized_models.AvailableGameInfo;
 import com.generals.serialized_models.SelectionGameCommand;
 import com.generals.subwindows.EntryNewGameNameSubwindow;
@@ -18,14 +18,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.stage.*;
 
-import com.google.gson.Gson;
-import sun.applet.Main;
-
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class GameSelectionWindow implements Window {
@@ -39,9 +33,9 @@ public class GameSelectionWindow implements Window {
     private Button connectToChosenGameButton;
     private ListView<String> gamesListView;
 
-    private List<AvailableGameInfo> availableGames = Collections.synchronizedList(new ArrayList<AvailableGameInfo>());
-    private AtomicBoolean isAvailableGamesChanged = new AtomicBoolean(false);
+    private List<AvailableGameInfo> availableGames = new ArrayList<AvailableGameInfo>();
     private Integer selectedGameId = null;
+    private AvailableGamesAuditor auditor;
 
     public GameSelectionWindow(Stage stage) {
         this.stage = stage;
@@ -65,11 +59,7 @@ public class GameSelectionWindow implements Window {
                 SelectionGameCommand command = new SelectionGameCommand("join");
                 command.setGameId(selectedGameId);
                 MainApplication.getServerConnection().sendCommandToServer(command);
-                SelectionGameCommand command1 = new SelectionGameCommand("ready_to_start");
-                MainApplication.getServerConnection().sendCommandToServer(command1);
-                while (true) {
-                    MainApplication.getServerConnection().readContentFromServer();
-                }
+                new GameWaitingRoomWindow(stage);
             }
         });
     }
@@ -79,19 +69,16 @@ public class GameSelectionWindow implements Window {
         createNewGameButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Create new game'");
-                EntryNewGameNameSubwindow subWindow = new EntryNewGameNameSubwindow(stage);
+                EntryNewGameNameSubwindow subWindow = new EntryNewGameNameSubwindow(stage, auditor);
             }
         });
     }
 
     private void initGamesListView() {
-        setAvailableGamesFromServer();
+        auditor = new AvailableGamesAuditor(availableGames);
+        auditor.start();
         gamesListView = new ListView<String>();
-        ObservableList<String> items = FXCollections.observableArrayList();
-        for (AvailableGameInfo info : availableGames) {
-            items.add(info.toString());
-        }
-        gamesListView.setItems(items);
+        updateGamesListView();
         gamesListView.setPrefWidth(300);
         gamesListView.setPrefHeight(200);
         gamesListView.setStyle("-fx-background-color: #0e0c32; " +
@@ -99,11 +86,32 @@ public class GameSelectionWindow implements Window {
                 "-fx-font-family: 'DejaVu Sans'");
         gamesListView.getSelectionModel().getSelectedIndices().addListener(new ListChangeListener<Integer>() {
             public void onChanged(Change<? extends Integer> c) {
-                selectedGameId = availableGames.get(c.getList().get(0)).game_id;
-                System.out.println("Selected game id = " + selectedGameId);
-                connectToChosenGameButton.setDisable(false);
+                System.out.println("onChanged ListView");
+                // TODO:
+//                synchronized (auditor.getMutex()) {
+//                    System.out.println("Super values: " + c.getList().get(0) + " " + c.getList().size());
+//                    selectedGameId = availableGames.get(c.getList().get(0)).game_id;
+//                }
+//                System.out.println("Selected game id = " + selectedGameId);
+//                connectToChosenGameButton.setDisable(false);
             }
         });
+        auditor.getVersion().addListener(new ChangeListener<Number>() {
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                updateGamesListView();
+            }
+        });
+    }
+
+    private void updateGamesListView() {
+        ObservableList<String> items = FXCollections.observableArrayList();
+        synchronized (auditor.getMutex()) {
+            for (AvailableGameInfo info : availableGames) {
+                items.add(info.toString());
+            }
+        }
+        gamesListView.setItems(items);
+        System.out.println("GamesListView was updated");
     }
 
     public Scene getScene() {
@@ -135,14 +143,6 @@ public class GameSelectionWindow implements Window {
 
         Scene scene = new Scene(pane, WINDOW_WIDTH, WINDOW_HEIGHT);
         return scene;
-    }
-
-    private void setAvailableGamesFromServer() {
-        System.out.println("Getting list of available games from Server");
-        String content = MainApplication.getServerConnection().readContentFromServer();
-        AvailableGameInfo[] availableGamesArray = new Gson().fromJson(content, AvailableGameInfo[].class);
-        availableGames.clear();
-        availableGames.addAll(Arrays.asList(availableGamesArray));
     }
 }
 

@@ -63,7 +63,8 @@ public class ServerConnection {
             InputStream in = getInputStream();
             int r = in.read(buf);
             content = new String(buf, 0, r);
-            System.out.println("Get content from server: " + content);
+            System.out.println(Thread.currentThread().getName() +
+                    ": Get content from server: " + content);
         } catch (IOException exception) {
             exception.printStackTrace();
         }
@@ -71,7 +72,8 @@ public class ServerConnection {
     }
 
     public void writeContentToServer(String content) {
-        System.out.println("Sending content to server: " + content);
+        System.out.println(Thread.currentThread().getName() +
+                ": Sending content to server: " + content);
         try {
             OutputStream outputStream = getOutputStream();
             outputStream.write(content.getBytes());
