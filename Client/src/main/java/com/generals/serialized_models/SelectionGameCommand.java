@@ -1,11 +1,11 @@
 package com.generals.serialized_models;
 
-public class ConnectionGameCommand {
+public class SelectionGameCommand {
     String command;
     String name = null;
     Integer game_id = null;
 
-    public ConnectionGameCommand(String command) {
+    public SelectionGameCommand(String command) {
         this.command = command;
     }
 
