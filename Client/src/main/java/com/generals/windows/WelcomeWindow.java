@@ -41,9 +41,12 @@ public class WelcomeWindow implements Window {
         serverConnectionButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Connect to server'");
-                MainApplication.initServerConnection("127.0.0.1", 8888);
+                Boolean isServerAvailable = MainApplication.initServerConnection("127.0.0.1",
+                        8888);
+                if (isServerAvailable) {
+                    GameSelectionWindow gameSelectionWindow = new GameSelectionWindow(stage);
+                }
                 // TODO: subwindow with server parameters
-                GameSelectionWindow gameSelectionWindow = new GameSelectionWindow(stage);
             }
         });
     }

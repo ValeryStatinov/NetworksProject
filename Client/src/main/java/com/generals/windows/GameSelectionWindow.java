@@ -6,6 +6,7 @@ import com.generals.serialized_models.AvailableGameInfo;
 import com.generals.serialized_models.SelectionGameCommand;
 import com.generals.subwindows.EntryNewGameNameSubwindow;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
@@ -106,14 +107,18 @@ public class GameSelectionWindow implements Window {
     }
 
     private void updateGamesListView() {
-        ObservableList<String> items = FXCollections.observableArrayList();
-        synchronized (auditor.getMutex()) {
-            for (AvailableGameInfo info : availableGames) {
-                items.add(info.toString());
+        Platform.runLater(new Runnable() {
+            public void run() {
+                ObservableList<String> items = FXCollections.observableArrayList();
+                synchronized (auditor.getMutex()) {
+                    for (AvailableGameInfo info : availableGames) {
+                        items.add(info.toString());
+                    }
+                }
+                gamesListView.setItems(items);
+                System.out.println("GamesListView was updated");
             }
-        }
-        gamesListView.setItems(items);
-        System.out.println("GamesListView was updated");
+        });
     }
 
     public Scene getScene() {

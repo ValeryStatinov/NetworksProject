@@ -14,12 +14,13 @@ public class ServerConnection {
     private int serverPort;
     private Socket socket = null;
 
-    ServerConnection(String serverAddress, int serverPort) {
+    ServerConnection(String serverAddress, int serverPort) throws IOException {
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
+        getSocket();
     }
 
-    private Socket getSocket() {
+    private Socket getSocket() throws IOException {
         if (socket == null) {
             try {
                 System.out.println("Connecting to server...");
@@ -28,7 +29,7 @@ public class ServerConnection {
                 System.out.println("Connection established");
             } catch (IOException exception) {
                 System.out.println("Failed to connect to server");
-                exception.printStackTrace();
+                throw exception;
             }
         }
         return socket;

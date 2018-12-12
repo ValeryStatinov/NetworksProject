@@ -4,6 +4,8 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import com.generals.windows.*;
 
+import java.io.IOException;
+
 public class MainApplication extends Application {
     private static ServerConnection serverConnection = null;
 
@@ -23,10 +25,16 @@ public class MainApplication extends Application {
         launch(args);
     }
 
-    public static void initServerConnection(String serverAddress, int serverPort) {
+    public static boolean initServerConnection(String serverAddress, int serverPort) {
         if (serverConnection == null) {
-            serverConnection = new ServerConnection(serverAddress, serverPort);
+            try {
+                serverConnection = new ServerConnection(serverAddress, serverPort);
+                return true;
+            } catch (IOException exception) {
+                return false;
+            }
         }
+        return false;
     }
 
     public static ServerConnection getServerConnection() {
