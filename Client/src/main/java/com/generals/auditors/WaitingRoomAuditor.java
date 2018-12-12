@@ -1,24 +1,25 @@
 package com.generals.auditors;
 
 import com.generals.MainApplication;
-import com.generals.serialized_models.AvailableGameInfo;
 import com.generals.serialized_models.WaitingRoomInfo;
+import com.generals.windows.WaitingRoomWindow;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WaitingRoomAuditor extends Thread {
+    private WaitingRoomWindow window;
     private WaitingRoomInfo waitingRoomInfo;
     private final IntegerProperty version = new SimpleIntegerProperty(0);
     private AtomicBoolean isEnd = new AtomicBoolean(false);
     private Object mutex = new Object();
 
-    public WaitingRoomAuditor(WaitingRoomInfo waitingRoomInfo) {
+    public WaitingRoomAuditor(WaitingRoomInfo waitingRoomInfo, WaitingRoomWindow window) {
         this.waitingRoomInfo = waitingRoomInfo;
+        this.window = window;
         setDaemon(true);
     }
 
@@ -27,6 +28,14 @@ public class WaitingRoomAuditor extends Thread {
         while (!isEnd.get()) {
             System.out.println(this.getClass().getSimpleName() + ": Getting waiting room status from Server");
             String content = MainApplication.getServerConnection().readContentFromServer();
+
+            // TODO: go to game window
+            if (content.equals("{\"hello\": \"world\"}")) {
+                stopWork();
+                window.startGame();
+                break;
+            }
+
             WaitingRoomInfo newWaitingRoomInfo;
             try {
                 newWaitingRoomInfo = new Gson().fromJson(content, WaitingRoomInfo.class);
@@ -39,6 +48,7 @@ public class WaitingRoomAuditor extends Thread {
                     }
                 }
             } catch (JsonSyntaxException exception) {
+                System.out.println("JsonSyntaxException in " + Thread.currentThread().getName());
                 stopWork();
                 // end of work: info for next stage was
                 // TODO: end when handling command "connected to game"

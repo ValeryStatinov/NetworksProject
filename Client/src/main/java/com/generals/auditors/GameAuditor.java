@@ -1,50 +1,38 @@
 package com.generals.auditors;
 
 import com.generals.MainApplication;
-import com.generals.serialized_models.AvailableGameInfo;
-import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class AvailableGamesAuditor extends Thread {
-    private List<AvailableGameInfo> availableGames;
+public class GameAuditor extends Thread {
+    private StringBuilder gameInfo;
     private final IntegerProperty version = new SimpleIntegerProperty(0);
     private AtomicBoolean isEnd = new AtomicBoolean(false);
     private Object mutex = new Object();
 
-    public AvailableGamesAuditor(List<AvailableGameInfo> availableGames) {
-        this.availableGames = availableGames;
+    public GameAuditor(StringBuilder gameInfo) {
+        this.gameInfo = gameInfo;
         setDaemon(true);
     }
 
     public void run() {
         System.out.println("Running " + this.getClass().getSimpleName() + " " + Thread.currentThread().getName());
         while (!isEnd.get()) {
-            System.out.println(this.getClass().getSimpleName() + ": Getting list of available games from Server");
+            System.out.println(this.getClass().getSimpleName() + ": Getting game info from Server");
             String content = MainApplication.getServerConnection().readContentFromServer();
-            AvailableGameInfo[] availableGamesArray;
             try {
-                availableGamesArray = new Gson().fromJson(content, AvailableGameInfo[].class);
                 synchronized (mutex) {
-                    Object[] prevAvailableGamesArray = availableGames.toArray().clone();
-                    if (!Arrays.deepEquals(availableGamesArray, prevAvailableGamesArray)) {
-                        System.out.println(this.getClass().getSimpleName() +
-                                ": List of games is different, request a change of view");
-                        availableGames.clear();
-                        availableGames.addAll(Arrays.asList(availableGamesArray));
-                        version.setValue(version.getValue() + 1);
-                    }
+                    gameInfo.append("\n" + content);
+                    version.setValue(version.getValue() + 1);
                 }
             } catch (JsonSyntaxException exception) {
                 System.out.println("JsonSyntaxException in " + Thread.currentThread().getName());
                 stopWork();
                 // end of work: info for next stage was
-                // TODO: end when handling command "connected to game waiting room"
+                // TODO: handle game commands
             }
         }
 

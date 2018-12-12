@@ -78,7 +78,7 @@ public class WaitingRoomWindow implements Window {
     }
 
     private void initPlayersStatusLabel() {
-        auditor = new WaitingRoomAuditor(waitingRoomInfo);
+        auditor = new WaitingRoomAuditor(waitingRoomInfo, this);
         auditor.start();
 
         playersStatusLabel = new Label("players status label");
@@ -106,9 +106,8 @@ public class WaitingRoomWindow implements Window {
                 System.out.println("Pressed button 'Ready to play'");
                 SelectionGameCommand command = new SelectionGameCommand("ready_to_start");
                 MainApplication.getServerConnection().sendCommandToServer(command);
-//                while (true) {
-//                    MainApplication.getServerConnection().readContentFromServer();
-//                }
+
+                // TODO: go to game window
             }
         });
     }
@@ -117,9 +116,19 @@ public class WaitingRoomWindow implements Window {
         returnToGamesListButton = new Button("Return to games list");
         returnToGamesListButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
+                auditor.stopWork();
                 System.out.println("Pressed 'Return to games list' button");
                 SelectionGameCommand command = new SelectionGameCommand("leave_game");
+                MainApplication.getServerConnection().sendCommandToServer(command);
                 new GameSelectionWindow(stage);
+            }
+        });
+    }
+
+    public void startGame() {
+        Platform.runLater(new Runnable() {
+            public void run() {
+                new GameWindow(stage);
             }
         });
     }

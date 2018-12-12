@@ -41,6 +41,12 @@ public class GameSelectionWindow implements Window {
 
     public GameSelectionWindow(Stage stage) {
         this.stage = stage;
+        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            public void handle(WindowEvent event) {
+                SelectionGameCommand command = new SelectionGameCommand("leave_game");
+                MainApplication.getServerConnection().sendCommandToServer(command);
+            }
+        });
         scene = getScene();
         stage.setScene(scene);
         System.out.println("Showing " + this.getClass().getSimpleName());
@@ -91,7 +97,7 @@ public class GameSelectionWindow implements Window {
             public void onChanged(Change<? extends Integer> c) {
                 synchronized (auditor.getMutex()) {
                     int emphasizedIndex = c.getList().get(0);
-                    System.out.println(Thread.currentThread().getName() + " ListView: on change: " + emphasizedIndex);
+//                    System.out.println(Thread.currentThread().getName() + " ListView: on change: " + emphasizedIndex);
                     if (emphasizedIndex == -1) {
                         // The list is empty, do nothing
                         return;
@@ -105,34 +111,34 @@ public class GameSelectionWindow implements Window {
         });
         auditor.getVersion().addListener(new ChangeListener<Number>() {
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                updateGamesListView();
+                Platform.runLater(new Runnable() {
+                    public void run() {
+                        updateGamesListView();
+                    }
+                });
             }
         });
     }
 
     private void updateGamesListView() {
-        Platform.runLater(new Runnable() {
-            public void run() {
-                ObservableList<String> items = FXCollections.observableArrayList();
-                Integer newEmphasizedIndex = null;
-                synchronized (auditor.getMutex()) {
-                    for (int i = 0; i < availableGames.size(); ++i) {
-                        items.add(availableGames.get(i).toString());
-                        if (selectedGameId != null && availableGames.get(i).game_id == selectedGameId) {
-                            newEmphasizedIndex = i;
-                        }
-                    }
+        ObservableList<String> items = FXCollections.observableArrayList();
+        Integer newEmphasizedIndex = null;
+        synchronized (auditor.getMutex()) {
+            for (int i = 0; i < availableGames.size(); ++i) {
+                items.add(availableGames.get(i).toString());
+                if (selectedGameId != null && availableGames.get(i).game_id == selectedGameId) {
+                    newEmphasizedIndex = i;
                 }
-                gamesListView.setItems(items);
-                if (newEmphasizedIndex == null) {
-                    selectedGameId = null;
-                    connectToChosenGameButton.setDisable(true);
-                } else {
-                    gamesListView.getSelectionModel().select(newEmphasizedIndex);
-                }
-                System.out.println("GamesListView was updated");
             }
-        });
+        }
+        gamesListView.setItems(items);
+        if (newEmphasizedIndex == null) {
+            selectedGameId = null;
+            connectToChosenGameButton.setDisable(true);
+        } else {
+            gamesListView.getSelectionModel().select(newEmphasizedIndex);
+        }
+        System.out.println("GamesListView was updated");
     }
 
     public Scene getScene() {
