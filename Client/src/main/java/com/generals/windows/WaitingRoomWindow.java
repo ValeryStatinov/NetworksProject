@@ -29,16 +29,12 @@ public class GameWaitingRoomWindow implements Window {
     private Text topText;
     private Label playersStatusLabel;
     private Button readyToPlayButton;
+    private Button returnToGamesListButton;
 
     public GameWaitingRoomWindow(Stage stage) {
         this.stage = stage;
-        // TODO: parallel handling: reading data from server about current number of players
-        // and refreshing window
         stage.setScene(getScene());
         System.out.println("Showing " + this.getClass().getSimpleName());
-        while (true) {
-            MainApplication.getServerConnection().readContentFromServer();
-        }
     }
 
     public Scene getScene() {
@@ -49,18 +45,20 @@ public class GameWaitingRoomWindow implements Window {
         VBox vBox = new VBox(20);
         vBox.setAlignment(Pos.CENTER);
         pane.setCenter(vBox);
-        BorderPane.setMargin(vBox, new Insets(10, 10, 10, 10));
+        BorderPane.setMargin(vBox, new Insets(10, 50, 10, 50));
 
-        // Up section (with text)
         initTopText();
         vBox.getChildren().add(topText);
-
-        // Center section (with label)
         initPlayersStatusLabel();
         vBox.getChildren().add(playersStatusLabel);
+        initReadyToPlayButton();
+        vBox.getChildren().add(readyToPlayButton);
 
-
-//        vBox.getChildren().add(createGameButton);
+        HBox hBox = new HBox(15);
+        pane.setBottom(hBox);
+        BorderPane.setMargin(hBox, new Insets(10, 10, 10, 10));
+        initReturnToGamesListButton();
+        hBox.getChildren().add(returnToGamesListButton);
 
         Scene scene = new Scene(pane, WINDOW_WIDTH, WINDOW_HEIGHT);
         return scene;
@@ -87,6 +85,17 @@ public class GameWaitingRoomWindow implements Window {
                 while (true) {
                     MainApplication.getServerConnection().readContentFromServer();
                 }
+            }
+        });
+    }
+
+    private void initReturnToGamesListButton() {
+        returnToGamesListButton = new Button("Return to games list");
+        returnToGamesListButton.setOnAction(new EventHandler<ActionEvent>() {
+            public void handle(ActionEvent event) {
+                System.out.println("Pressed 'Return to games list' button");
+                SelectionGameCommand command = new SelectionGameCommand("leave_game");
+                new GameSelectionWindow(stage);
             }
         });
     }
