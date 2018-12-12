@@ -1,8 +1,12 @@
 package com.generals.windows;
 
 import com.generals.MainApplication;
+import com.generals.auditors.WaitingRoomAuditor;
 import com.generals.serialized_models.SelectionGameCommand;
-import com.generals.subwindows.EntryNewGameNameSubwindow;
+import com.generals.serialized_models.WaitingRoomInfo;
+import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -20,7 +24,7 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
 
-public class GameWaitingRoomWindow implements Window {
+public class WaitingRoomWindow implements Window {
     private static int WINDOW_WIDTH = 600;
     private static int WINDOW_HEIGHT = 600;
 
@@ -31,7 +35,10 @@ public class GameWaitingRoomWindow implements Window {
     private Button readyToPlayButton;
     private Button returnToGamesListButton;
 
-    public GameWaitingRoomWindow(Stage stage) {
+    private WaitingRoomInfo waitingRoomInfo = new WaitingRoomInfo();
+    private WaitingRoomAuditor auditor;
+
+    public WaitingRoomWindow(Stage stage) {
         this.stage = stage;
         stage.setScene(getScene());
         System.out.println("Showing " + this.getClass().getSimpleName());
@@ -71,8 +78,24 @@ public class GameWaitingRoomWindow implements Window {
     }
 
     private void initPlayersStatusLabel() {
+        auditor = new WaitingRoomAuditor(waitingRoomInfo);
+        auditor.start();
+
         playersStatusLabel = new Label("players status label");
         playersStatusLabel.setFont(Font.font("Verdana", FontWeight.NORMAL, 16));
+
+        auditor.getVersion().addListener(new ChangeListener<Number>() {
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                Platform.runLater(new Runnable() {
+                    public void run() {
+                        synchronized (auditor.getMutex()) {
+                            playersStatusLabel.setText(waitingRoomInfo.toString());
+                            System.out.println("Waiting room status label was updated!");
+                        }
+                    }
+                });
+            }
+        });
     }
 
     private void initReadyToPlayButton() {

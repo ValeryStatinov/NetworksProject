@@ -1,7 +1,7 @@
 package com.generals.windows;
 
 import com.generals.MainApplication;
-import com.generals.audirors.AvailableGamesAuditor;
+import com.generals.auditors.AvailableGamesAuditor;
 import com.generals.serialized_models.AvailableGameInfo;
 import com.generals.serialized_models.SelectionGameCommand;
 import com.generals.subwindows.EntryNewGameNameSubwindow;
@@ -27,6 +27,7 @@ public class GameSelectionWindow implements Window {
     private static int WINDOW_HEIGHT = 600;
 
     private Stage stage;
+    private Scene scene;
 
     private Text topText;
     private Button createNewGameButton;
@@ -39,7 +40,8 @@ public class GameSelectionWindow implements Window {
 
     public GameSelectionWindow(Stage stage) {
         this.stage = stage;
-        stage.setScene(getScene());
+        scene = getScene();
+        stage.setScene(scene);
         System.out.println("Showing " + this.getClass().getSimpleName());
     }
 
@@ -59,7 +61,7 @@ public class GameSelectionWindow implements Window {
                 SelectionGameCommand command = new SelectionGameCommand("join");
                 command.setGameId(selectedGameId);
                 MainApplication.getServerConnection().sendCommandToServer(command);
-                new GameWaitingRoomWindow(stage);
+                new WaitingRoomWindow(stage);
             }
         });
     }
@@ -69,7 +71,7 @@ public class GameSelectionWindow implements Window {
         createNewGameButton.setOnAction(new EventHandler<ActionEvent>() {
             public void handle(ActionEvent event) {
                 System.out.println("Pressed button 'Create new game'");
-                EntryNewGameNameSubwindow subWindow = new EntryNewGameNameSubwindow(stage, auditor);
+                EntryNewGameNameSubwindow subWindow = new EntryNewGameNameSubwindow(stage, scene);
             }
         });
     }

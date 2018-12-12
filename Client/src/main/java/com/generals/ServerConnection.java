@@ -83,7 +83,6 @@ public class ServerConnection {
     }
 
     public void sendCommandToServer(SelectionGameCommand command) {
-        System.out.println("Sending command to server: " + command);
         Gson gson = new Gson();
         String stringToSend = gson.toJson(command);
         writeContentToServer(stringToSend);
